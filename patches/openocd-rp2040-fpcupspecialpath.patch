@@ -1,0 +1,17 @@
+diff --git a/src/helper/options.c b/src/helper/options.c
+index 0ccbf56..0d2af91 100644
+--- a/src/helper/options.c
++++ b/src/helper/options.c
+@@ -269,6 +269,12 @@ static void add_default_dirs(void)
+ 		free(path);
+ 	}
+ 
++	path = alloc_printf("%s/../%s/%s", exepath, bin2data, "scripts");
++	if (path) {
++		add_script_search_dir(path);
++		free(path);
++	}
++
+ 	free(exepath);
+ 	free(bin2data);
+ }

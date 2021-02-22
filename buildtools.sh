@@ -234,6 +234,8 @@ buildopenocdrp2040() {
     git clone https://github.com/raspberrypi/openocd.git --branch picoprobe --depth=1 openocd-rp2040
     cd $OPENOCDRP2040VERSION
 
+    patch -p1 <../patches/openocd-rp2040-fpcupspecialpath.patch
+
     ./bootstrap 2>&1 | $PV --name="Bootstrap" --line-mode --size 44 >/dev/null
 
     mkdir build
@@ -257,11 +259,11 @@ buildopenocdrp2040() {
       strip $INSTALLDIR/${file}-rp2040
       [ -n "$HOSTISDARWIN" ] && codesign -f -o runtime --timestamp -s 'Developer ID Application: Michael Ring (4S7HMLQE4Z)' $INSTALLDIR/${file}-rp2040
     done
-    mkdir -p $INSTALLDIR/../share/openocd/scripts/{board,interface,target}
-    cp $BUILDDIR/usr/local/share/openocd/scripts/interface/picoprobe.cfg $INSTALLDIR/../share/openocd/scripts/interface/
-    cp $BUILDDIR/usr/local/share/openocd/scripts/target/rp2040*.cfg $INSTALLDIR/../share/openocd/scripts/target/
-    cp $BUILDDIR/usr/local/share/openocd/scripts/target/swj-dp*.tcl $INSTALLDIR/../share/openocd/scripts/target/
-    cat >$INSTALLDIR/../share/openocd/scripts/board/pico.cfg <<EOF
+    mkdir -p $INSTALLDIR/../../share/openocd/scripts/{board,interface,target}
+    cp $BUILDDIR/usr/local/share/openocd/scripts/interface/picoprobe.cfg $INSTALLDIR/../../share/openocd/scripts/interface/
+    cp $BUILDDIR/usr/local/share/openocd/scripts/target/rp2040*.cfg $INSTALLDIR/../../share/openocd/scripts/target/
+    cp $BUILDDIR/usr/local/share/openocd/scripts/target/swj-dp*.tcl $INSTALLDIR/../../share/openocd/scripts/target/
+    cat >$INSTALLDIR/../../share/openocd/scripts/board/pico.cfg <<EOF
 source [find interface/picoprobe.cfg]
 source [find target/RP2040.cfg]    
 EOF
@@ -289,6 +291,8 @@ buildopenocd() {
     git clone https://github.com/ntfreak/openocd.git openocd-0.11.0-rc2
     cd $OPENOCDVERSION
 
+    patch -p1 <../patches/openocd-fpcupspecialpath.patch
+    
     ./bootstrap 2>&1 | $PV --name="Bootstrap" --line-mode --size 42 >/dev/null
 
     mkdir build
@@ -312,8 +316,8 @@ buildopenocd() {
       strip $INSTALLDIR/${file}
       [ -n "$HOSTISDARWIN" ] && codesign -f -o runtime --timestamp -s 'Developer ID Application: Michael Ring (4S7HMLQE4Z)' $INSTALLDIR/${file}
     done
-    mkdir -p $INSTALLDIR/../share/openocd
-    cp -r $BUILDDIR/usr/local/share/openocd $INSTALLDIR/../share/
+    mkdir -p $INSTALLDIR/../../share/openocd
+    cp -r $BUILDDIR/usr/local/share/openocd $INSTALLDIR/../../share/
     rm -rf $BUILDDIR/usr
   )
 }
