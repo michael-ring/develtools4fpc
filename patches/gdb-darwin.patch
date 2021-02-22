@@ -1,0 +1,10 @@
+--- gdb-10.1/bfd/elf-bfd.h.old	2021-02-20 01:28:29.000000000 +0100
++++ gdb-10.1/bfd/elf-bfd.h	2021-02-20 00:18:40.000000000 +0100
+@@ -22,6 +22,7 @@
+ #ifndef _LIBELF_H_
+ #define _LIBELF_H_ 1
+ 
++#include <string.h>
+ #include "elf/common.h"
+ #include "elf/external.h"
+ #include "elf/internal.h"

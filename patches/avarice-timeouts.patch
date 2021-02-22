@@ -1,0 +1,60 @@
+diff --git a/avarice/src/jtag.h b/avarice/src/jtag.h
+index 86d684c..15ba4ac 100644
+--- a/avarice/src/jtag.h
++++ b/avarice/src/jtag.h
+@@ -272,9 +272,9 @@ enum
+     MAX_JTAG_COMM_ATTEMPS	      = 10,
+     MAX_JTAG_SYNC_ATTEMPS	      = 3,
+ 
+-    JTAG_RESPONSE_TIMEOUT	      = 1000000,
++    JTAG_RESPONSE_TIMEOUT	      = 100000000,
+     JTAG_COMM_TIMEOUT		      = 100000,
+-    JTAG3_PIPE_TIMEOUT                = 100,
++    JTAG3_PIPE_TIMEOUT                = 1000,
+ 
+     MAX_FLASH_PAGE_SIZE               = 512,
+     MAX_EEPROM_PAGE_SIZE              = 32,
+diff --git a/avarice/src/jtag2usb.cc b/avarice/src/jtag2usb.cc
+index 4079f1f..ecda992 100644
+--- a/avarice/src/jtag2usb.cc
++++ b/avarice/src/jtag2usb.cc
+@@ -1248,7 +1248,7 @@ static void *hid_thread(void * data)
+ 	  if (rv < 0)
+ 	    throw jtag_exception("Querying for event: hid_write() failed");
+ 
+-	  rv = hid_read_timeout(hdev, buf, hdata->max_pkt_size + 1, 1000);
++	  rv = hid_read_timeout(hdev, buf, hdata->max_pkt_size + 1, 1000000);
+ 	  if (rv <= 0)
+ 	  {
+ 	    debugOut("Querying for event: hid_read() failed (%d)\n",
+@@ -1353,7 +1353,7 @@ static void *hid_thread(void * data)
+ 		if (rv < 0)
+ 		  throw jtag_exception("Querying for response: hid_write() failed");
+ 
+-		rv = hid_read_timeout(hdev, buf + offset, hdata->max_pkt_size + 1, 1000);
++		rv = hid_read_timeout(hdev, buf + offset, hdata->max_pkt_size + 1, 100000);
+ 		if (rv <= 0)
+ 		{
+ 		  debugOut("Querying for response: hid_read() failed (%d)\n",
+diff --git a/avarice/src/jtag3io.cc b/avarice/src/jtag3io.cc
+index 63919a1..964ad24 100644
+--- a/avarice/src/jtag3io.cc
++++ b/avarice/src/jtag3io.cc
+@@ -179,7 +179,7 @@ int jtag3::recvFrame(unsigned char *&msg, unsigned short &seqno)
+   if (rv == 0)
+   {
+     /* timeout */
+-    debugOut("read() timed out\n");
++    debugOut("read(JTAG_RESPONSE_TIMEOUT) timed out\n");
+ 
+     return 0;
+   }
+@@ -233,7 +233,7 @@ int jtag3::recvFrame(unsigned char *&msg, unsigned short &seqno)
+   else if (rv == 0)
+   {
+     /* timeout */
+-    debugOut("read() timed out\n");
++    debugOut("read(JTAG3_PIPE_TIMEOUT) timed out\n");
+ 
+     return 0;
+   }
