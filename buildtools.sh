@@ -13,7 +13,12 @@ HOSTISWINDOWS=
 HOSTISLINUX=
 HOSTISDARWIN=
 
-[ "$(uname -s)" = "Darwin" ] && HOSTISDARWIN=TRUE
+if [ "$(uname -s)" = "Darwin" ]; then
+  HOSTISDARWIN=TRUE
+  BREWDIR=$(dirname $(dirname $(which brew)))
+  [ "$(uname -m)" = "x86_64" ] && HOSTISDARWINX86_64=TRUE
+  [ "$(uname -m)" = "arm64" ] && HOSTISDARWINARM64=TRUE
+fi
 
 PV=pv
 
@@ -80,7 +85,7 @@ buildgdb() {
     [ -d $GDBVERSION ] && rm -rf $GDBVERSION
     tar zxvf ${GDBVERSION}.tar.gz 2>&1 | $PV --name="Unpack   " --line-mode --size 13100 >/dev/null
     cd $GDBVERSION
-    [ -n "$HOSTISDARWIN" ] && patch -p1 <../gdb-darwin.patch
+    [ -n "$HOSTISDARWIN" ] && patch -p1 <../patches/gdb-darwin.patch
 
     mkdir build
     cd build
@@ -135,7 +140,7 @@ buildavarice() {
     [ -d $AVARICEVERSION ] && rm -rf $AVARICEVERSION
     tar zxvf ${AVARICEVERSION}.tar.gz 2>&1 | $PV --name="Unpack   " --line-mode --size 13100 >/dev/null
     cd $AVARICEVERSION
-    patch -p1 <../avarice-timeouts.patch
+    patch -p1 <../patches/avarice-timeouts.patch
     cd avarice
     ./Bootstrap
 
@@ -157,7 +162,8 @@ buildavarice() {
 
 
     cd src
-    [ -n "$HOSTISDARWIN" ] && g++  -g -O2 -D_THREAD_SAFE -pthread   -o avarice crc16.o devdescr.o ioreg.o jtag2bp.o jtag2io.o jtag2misc.o jtag2prog.o jtag2run.o jtag2rw.o jtag2usb.o jtag3bp.o jtag3io.o jtag3misc.o jtag3prog.o jtag3run.o jtag3rw.o jtagbp.o jtaggeneric.o jtagio.o jtagmisc.o jtagprog.o jtagrun.o jtagrw.o main.o remote.o utils.o gnu_getopt.o gnu_getopt1.o  /usr/local/opt/hidapi/lib/libhidapi.a /usr/local/opt/libusb/lib/libusb-1.0.a /usr/local/opt/libusb-compat/lib/libusb.a -lobjc -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,AppKit /usr/local/opt/gettext/lib/libintl.a -liconv   -lz -ldl
+    [ -n "$HOSTISDARWINX86_64" ] && g++  -g -O2 -D_THREAD_SAFE -pthread   -o avarice crc16.o devdescr.o ioreg.o jtag2bp.o jtag2io.o jtag2misc.o jtag2prog.o jtag2run.o jtag2rw.o jtag2usb.o jtag3bp.o jtag3io.o jtag3misc.o jtag3prog.o jtag3run.o jtag3rw.o jtagbp.o jtaggeneric.o jtagio.o jtagmisc.o jtagprog.o jtagrun.o jtagrw.o main.o remote.o utils.o gnu_getopt.o gnu_getopt1.o  /usr/local/opt/hidapi/lib/libhidapi.a /usr/local/opt/libusb/lib/libusb-1.0.a /usr/local/opt/libusb-compat/lib/libusb.a -lobjc -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,AppKit /usr/local/opt/gettext/lib/libintl.a -liconv   -lz -ldl
+    [ -n "$HOSTISDARWINARM64" ] && g++  -g -O2 -D_THREAD_SAFE -pthread   -o avarice crc16.o devdescr.o ioreg.o jtag2bp.o jtag2io.o jtag2misc.o jtag2prog.o jtag2run.o jtag2rw.o jtag2usb.o jtag3bp.o jtag3io.o jtag3misc.o jtag3prog.o jtag3run.o jtag3rw.o jtagbp.o jtaggeneric.o jtagio.o jtagmisc.o jtagprog.o jtagrun.o jtagrw.o main.o remote.o utils.o gnu_getopt.o gnu_getopt1.o /opt/homebrew/lib/libhidapi.a /opt/homebrew/lib/libusb-1.0.a /opt/homebrew/lib/libusb.a -lobjc -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,AppKit /opt/homebrew/lib/libintl.a -liconv   -lz -ldl
     cd ..    
 
     make install DESTDIR=$BUILDDIR 2>/dev/null | $PV --name="Install  " --line-mode --size 15 >/dev/null
@@ -239,7 +245,8 @@ buildopenocdrp2040() {
     [ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 1250 >/dev/null
     [ -n "$HOSTISWINDOWS" ]                     && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 1250 >/dev/null
 
-    [ -n "$HOSTISDARWIN" ] && gcc -Wall -Wstrict-prototypes -Wformat-security -Wshadow -Wextra -Wno-unused-parameter -Wbad-function-cast -Wcast-align -Wredundant-decls -g -O2 -o src/openocd src/main.o src/.libs/libopenocd.a -L/usr/local/Cellar/libusb/1.0.24/lib /usr/local/opt/libusb-compat/lib/libusb.a /usr/local/opt/libftdi/lib/libftdi1.a /usr/local/opt/hidapi/lib/libhidapi.a /usr/local/opt/libusb/lib/libusb-1.0.a -lobjc -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,AppKit -lm ./jimtcl/libjim.a
+    [ -n "$HOSTISDARWINX86_64" ]  && gcc -Wall -Wstrict-prototypes -Wformat-security -Wshadow -Wextra -Wno-unused-parameter -Wbad-function-cast -Wcast-align -Wredundant-decls -g -O2 -o src/openocd src/main.o src/.libs/libopenocd.a /usr/local/opt/libusb-compat/lib/libusb.a /usr/local/opt/libftdi/lib/libftdi1.a /usr/local/opt/hidapi/lib/libhidapi.a /usr/local/opt/libusb/lib/libusb-1.0.a -lobjc -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,AppKit -lm ./jimtcl/libjim.a
+    [ -n "$HOSTISDARWINARM64" ] && gcc -Wall -Wstrict-prototypes -Wformat-security -Wshadow -Wextra -Wno-unused-parameter -Wbad-function-cast -Wcast-align -Wredundant-decls -g -O2 -o src/openocd src/main.o src/.libs/libopenocd.a                /opt/homebrew/lib/libusb.a          /opt/homebrew/lib/libftdi1.a         /opt/homebrew/lib/libhidapi.a         /opt/homebrew/lib/libusb-1.0.a -lobjc -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,AppKit -lm ./jimtcl/libjim.a
     make install DESTDIR=$BUILDDIR 2>/dev/null | $PV --name="Install  " --line-mode --size 27 >/dev/null
 
     mkdir -p $INSTALLDIR
@@ -285,7 +292,8 @@ buildopenocd() {
     [ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && make -j 8 INFO_DEPS= 2>/dev/null | $PV --name="Build    " --line-mode --size 1250 >/dev/null
     [ -n "$HOSTISWINDOWS" ]                     && make -j 8 INFO_DEPS= 2>/dev/null | $PV --name="Build    " --line-mode --size 1250 >/dev/null
 
-    [ -n "$HOSTISDARWIN" ] && gcc -Wall -Wstrict-prototypes -Wformat-security -Wshadow -Wextra -Wno-unused-parameter -Wbad-function-cast -Wcast-align -Wredundant-decls -Wpointer-arith -g -O2 -o src/openocd src/main.o src/.libs/libopenocd.a -L/usr/local/Cellar/libusb/1.0.24/lib /usr/local/opt/libusb-compat/lib/libusb.a /usr/local/opt/libftdi/lib/libftdi1.a /usr/local/opt/hidapi/lib/libhidapi.a /usr/local/opt/libusb/lib/libusb-1.0.a -lobjc -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,AppKit -lm ./jimtcl/libjim.a
+    [ -n "$HOSTISDARWINX86_64" ]  && gcc -Wall -Wstrict-prototypes -Wformat-security -Wshadow -Wextra -Wno-unused-parameter -Wbad-function-cast -Wcast-align -Wredundant-decls -Wpointer-arith -g -O2 -o src/openocd src/main.o src/.libs/libopenocd.a /usr/local/opt/libusb-compat/lib/libusb.a /usr/local/opt/libftdi/lib/libftdi1.a /usr/local/opt/hidapi/lib/libhidapi.a /usr/local/opt/libusb/lib/libusb-1.0.a -lobjc -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,AppKit -lm ./jimtcl/libjim.a
+    [ -n "$HOSTISDARWINARM64" ] && gcc -Wall -Wstrict-prototypes -Wformat-security -Wshadow -Wextra -Wno-unused-parameter -Wbad-function-cast -Wcast-align -Wredundant-decls -Wpointer-arith -g -O2 -o src/openocd src/main.o src/.libs/libopenocd.a                /opt/homebrew/lib/libusb.a          /opt/homebrew/lib/libftdi1.a         /opt/homebrew/lib/libhidapi.a         /opt/homebrew/lib/libusb-1.0.a -lobjc -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,AppKit -lm ./jimtcl/libjim.a
     make install INFO_DEPS= DESTDIR=$BUILDDIR 2>/dev/null | $PV --name="Install  " --line-mode --size 24 >/dev/null
 
     mkdir -p $INSTALLDIR
