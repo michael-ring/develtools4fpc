@@ -17,7 +17,9 @@ if [ "$(uname -s)" = "Darwin" ]; then
   HOSTISDARWIN=TRUE
   BREWDIR=$(dirname $(dirname $(which brew)))
   [ "$(uname -m)" = "x86_64" ] && HOSTISDARWINX86_64=TRUE
-  [ "$(uname -m)" = "arm64" ] && HOSTISDARWINARM64=TRUE
+  [ "$(uname -m)" = "x86_64" ] && ARCHDIR=x86_64-darwin
+  [ "$(uname -m)" = "arm64" ]  && HOSTISDARWINARM64=TRUE
+  [ "$(uname -m)" = "arm64" ]  && ARCHDIR=aarch64-darwin
 fi
 
 PV=pv
@@ -126,7 +128,7 @@ buildavarice() {
   DESTSUBDIR=$2
   PROGRAMPREFIX=$3
   [ -z "$PROGRAMPREFIX" ] && PROGRAMPREFIX=${TARGET}
-  INSTALLDIR=$OUTPUTDIR/cross/bin/$DESTSUBDIR/
+  INSTALLDIR=$OUTPUTDIR/bin/$ARCHDIR/
   EXEEXT=
   [ -n "$HOSTISWINDOWS" ] && EXEEXT=.exe
 
@@ -184,7 +186,7 @@ buildstlink() {
   DESTSUBDIR=$2
   PROGRAMPREFIX=$3
   [ -z "$PROGRAMPREFIX" ] && PROGRAMPREFIX=${TARGET}
-  INSTALLDIR=$OUTPUTDIR/cross/bin/$DESTSUBDIR/
+  INSTALLDIR=$OUTPUTDIR/bin/$ARCHDIR/
   EXEEXT=
   [ -n "$HOSTISWINDOWS" ] && EXEEXT=.exe
 
@@ -203,13 +205,12 @@ buildstlink() {
     [ -n "$HOSTISWINDOWS" ]                     && make release -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 113 >/dev/null
 
     mkdir -p $INSTALLDIR
-    for file in st-util ; do
+    for file in st-flash st-info st-util ; do
       rm -f $INSTALLDIR/$file ||:  2>/dev/null
       cp build/Release/bin/$file $INSTALLDIR
       strip $INSTALLDIR/$file
       [ -n "$HOSTISDARWIN" ] && codesign -f -o runtime --timestamp -s 'Developer ID Application: Michael Ring (4S7HMLQE4Z)' $INSTALLDIR/$file
     done
-    rm -rf $BUILDDIR/usr
   )
 }
 
@@ -218,7 +219,7 @@ buildopenocdrp2040() {
   DESTSUBDIR=$2
   PROGRAMPREFIX=$3
   [ -z "$PROGRAMPREFIX" ] && PROGRAMPREFIX=${TARGET}
-  INSTALLDIR=$OUTPUTDIR/cross/bin/$DESTSUBDIR/
+  INSTALLDIR=$OUTPUTDIR/bin/$ARCHDIR/
   EXEEXT=
   [ -n "$HOSTISWINDOWS" ] && EXEEXT=.exe
 
@@ -256,6 +257,14 @@ buildopenocdrp2040() {
       strip $INSTALLDIR/${file}-rp2040
       [ -n "$HOSTISDARWIN" ] && codesign -f -o runtime --timestamp -s 'Developer ID Application: Michael Ring (4S7HMLQE4Z)' $INSTALLDIR/${file}-rp2040
     done
+    mkdir -p $INSTALLDIR/../share/openocd/scripts/{board,interface,target}
+    cp $BUILDDIR/usr/local/share/openocd/scripts/interface/picoprobe.cfg $INSTALLDIR/../share/openocd/scripts/interface/
+    cp $BUILDDIR/usr/local/share/openocd/scripts/target/rp2040*.cfg $INSTALLDIR/../share/openocd/scripts/target/
+    cp $BUILDDIR/usr/local/share/openocd/scripts/target/swj-dp*.tcl $INSTALLDIR/../share/openocd/scripts/target/
+    cat >$INSTALLDIR/../share/openocd/scripts/board/pico.cfg <<EOF
+source [find interface/picoprobe.cfg]
+source [find target/RP2040.cfg]    
+EOF
     rm -rf $BUILDDIR/usr
   )
 }
@@ -265,7 +274,7 @@ buildopenocd() {
   DESTSUBDIR=$2
   PROGRAMPREFIX=$3
   [ -z "$PROGRAMPREFIX" ] && PROGRAMPREFIX=${TARGET}
-  INSTALLDIR=$OUTPUTDIR/cross/bin/$DESTSUBDIR/
+  INSTALLDIR=$OUTPUTDIR/bin/$ARCHDIR/
   EXEEXT=
   [ -n "$HOSTISWINDOWS" ] && EXEEXT=.exe
 
@@ -303,6 +312,8 @@ buildopenocd() {
       strip $INSTALLDIR/${file}
       [ -n "$HOSTISDARWIN" ] && codesign -f -o runtime --timestamp -s 'Developer ID Application: Michael Ring (4S7HMLQE4Z)' $INSTALLDIR/${file}
     done
+    mkdir -p $INSTALLDIR/../share/openocd
+    cp -r $BUILDDIR/usr/local/share/openocd $INSTALLDIR/../share/
     rm -rf $BUILDDIR/usr
   )
 }
@@ -323,3 +334,14 @@ buildavarice       avr              avr-embedded
 buildstlink        arm-none-eabi    arm-embedded
 buildopenocd       arm-none-eabi    arm-embedded
 buildopenocdrp2040 arm-none-eabi    arm-embedded
+
+rm -f develtools4fpc-$ARCHDIR.zip
+rm -f binutils_gdb-$ARCHDIR.zip
+mkdir -p cross/bin/arm-freertos
+cp cross/bin/arm-embedded/* cross/bin/arm-freertos/
+mkdir -p cross/bin/riscv32-freertos
+cp cross/bin/riscv32-embedded/* cross/bin/riscv32-freertos/
+
+zip -r develtools4fpc-$ARCHDIR.zip bin share |  $PV --name="Zipping  " --line-mode --size 827 >/dev/null
+zip -r binutils_gdb-$ARCHDIR.zip  cross |  $PV --name="Zipping  " --line-mode --size 51 >/dev/null
+
