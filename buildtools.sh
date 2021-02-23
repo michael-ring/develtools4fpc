@@ -23,6 +23,12 @@ if [ "$(uname -s)" = "Darwin" ]; then
   [ "$(uname -m)" = "arm64" ]  && HOSTISDARWINARM64=TRUE
   [ "$(uname -m)" = "arm64" ]  && ARCHDIR=aarch64-darwin
 fi
+if [ "$(uname -s)" = "Linux" ]; then
+  HOSTISLINUX=TRUE
+  PREFIXDIR=/usr/local/
+  [ "$(uname -m)" = "x86_64" ] && HOSTISLINUXX86_64=TRUE
+  [ "$(uname -m)" = "x86_64" ] && ARCHDIR=x86_64-linux
+fi
 
 if [ "$(uname -s | sed 's,_NT.*$,_NT,g')" = "MINGW64_NT" ]; then
   HOSTISWINDOWS=TRUE
@@ -114,16 +120,16 @@ buildgdb() {
     mkdir build
     cd build
 
-    CONFIGUREFLAGS="--target=$TARGET --disable-shared --enable-static --disable-werror \
-                    --enable-tui --with-expat --enable-curses \
+    CONFIGUREFLAGS="--target=$TARGET --disable-shared --enable-static --disable-werror --with-curses \
+                    --enable-tui --with-expat --without-babeltrace --disable-unit-tests --disable-source-highlight \
                     --disable-xz --disable-xzdec --disable-lzmadec --disable-scripts \
-                    --disable-doc --disable-docs --disable-nls \
+                    --disable-doc --disable-docs --disable-nls --disable-rpath --disable-libmcheck --without-libunwind \
                     --without-mpc --without-mpfr --without-gmp --without-cloog --without-isl \
-                    --disable-sim --enable-gdbserver=no --without-python  --disable-gprof \
-                    --without-guile --without-lzma \
+                    --disable-sim --enable-gdbserver=no --without-python  --disable-gprof --without-debuginfod \
+                    --without-guile --without-lzma --without-xxhash --without-intel-pt --disable-inprocess-agent \
                     --program-prefix=${PROGRAMPREFIX}-"
-    [ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
-    [ -n "$HOSTISWINDOWS" ]                     && ../configure $CONFIGUREFLAGS --with-system-readline 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
+    [ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && CFLAGS=-DNDEBUG CXXFLAGS=-DNDEBUG ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
+    [ -n "$HOSTISWINDOWS" ]                     && CFLAGS=-DNDEBUG CXXFLAGS=-DNDEBUG ../configure $CONFIGUREFLAGS --with-system-readline 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
   
     [ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 3740 >/dev/null
     [ -n "$HOSTISWINDOWS" ]                     && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 3740 >/dev/null
