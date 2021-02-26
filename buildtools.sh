@@ -3,6 +3,7 @@ set -e
 BUILDDIR=$(pwd)
 BINUTILSVERSION=binutils-2.36.1
 GDBVERSION=gdb-10.1
+OLDGDBVERSION=gdb-8.3.1
 AVARICEVERSION=AVaRICE-master
 STLINKVERSION=stlink-1.6.1
 OPENOCDRP2040VERSION=openocd-rp2040
@@ -129,8 +130,9 @@ buildgdb() {
                     --disable-sim --enable-gdbserver=no --without-python  --disable-gprof --without-debuginfod \
                     --without-guile --without-lzma --without-xxhash --without-intel-pt --disable-inprocess-agent \
                     --program-prefix=${PROGRAMPREFIX}-"
-    [ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && CFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" CXXFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
-    [ -n "$HOSTISWINDOWS" ]                     && CFLAGS=-DNDEBUG CXXFLAGS=-DNDEBUG ../configure $CONFIGUREFLAGS --with-system-readline 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
+    [ -n "$HOSTISDARWIN" ]  &&../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
+    [ -n "$HOSTISLINUX" ]   && CFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" CXXFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
+    [ -n "$HOSTISWINDOWS" ] && CFLAGS=-DNDEBUG CXXFLAGS=-DNDEBUG ../configure $CONFIGUREFLAGS --with-system-readline 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
   
     [ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 3740 >/dev/null
     [ -n "$HOSTISWINDOWS" ]                     && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 3740 >/dev/null
@@ -152,6 +154,83 @@ buildgdb() {
     for file in gdb${EXEEXT} ; do
       rm -f $INSTALLDIR/${PROGRAMPREFIX}-$file ||:  2>/dev/null
       cp $BUILDDIR/$PREFIXDIR/bin/${PROGRAMPREFIX}-$file $INSTALLDIR
+      strip $INSTALLDIR/${PROGRAMPREFIX}-$file
+      [ -n "$HOSTISDARWIN" ] && codesign -f -o runtime --timestamp -s 'Developer ID Application: Michael Ring (4S7HMLQE4Z)' $INSTALLDIR/${PROGRAMPREFIX}-$file
+    done
+    rm -rf $BUILDDIR/PREFIXDIR
+  )
+}
+
+buildoldgdb() {
+  TARGET=$1
+  DESTSUBDIR=$2
+  PROGRAMPREFIX=$3
+  [ -z "$PROGRAMPREFIX" ] && PROGRAMPREFIX=${TARGET}
+  INSTALLDIR=$OUTPUTDIR/cross/bin/$DESTSUBDIR/
+  EXEEXT=
+  [ -n "$HOSTISWINDOWS" ] && EXEEXT=.exe
+
+  if [ -f $INSTALLDIR/${PROGRAMPREFIX}-gdb-8.3.1${EXEEXT} ]; then
+    echo "Skipping $OLDGDBVERSION for target $TARGET..."
+    return 0
+  else
+    echo "Building $OLDGDBVERSION for target $TARGET..."
+  fi
+  (
+    [ -d $OLDGDBVERSION ] && rm -rf $OLDGDBVERSION
+    tar zxvf ${OLDGDBVERSION}.tar.gz 2>&1 | $PV --name="Unpack   " --line-mode --size 13100 >/dev/null
+    cd $OLDGDBVERSION
+    patch -p1 <../patches/gdb-avr.patch
+    [ -n "$HOSTISDARWIN" ] && patch -p1 <../patches/gdb-darwin.patch
+    if [ -n "$HOSTISWINDOWS" ]; then
+      patch -p1 <../patches/gdb-perfomance.patch
+      patch -p1 <../patches/gdb-fix-using-gnu-print.patch
+      patch -p1 <../patches/gdb-7.12-dynamic-libs.patch
+      patch -p1 <../patches/python-configure-path-fixes.patch
+      patch -p1 <../patches/gdb-fix-tui-with-pdcurses.patch
+      patch -p1 <../patches/gdb-lib-order.patch
+      patch -p1 <../patches/gdb-fix-array.patch
+      patch -p1 <../patches/gdb-home-is-userprofile.patch
+      sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" libiberty/configure
+      CPPFLAGS+=" -I${MINGW_PREFIX}/include/ncurses"
+      CFLAGS+=" -I${MINGW_PREFIX}/include/ncurses"
+      CXXFLAGS+=" -I${MINGW_PREFIX}/include/ncurses"
+      LDFLAGS+=" -fstack-protector"
+    fi
+
+    mkdir build
+    cd build
+
+    CONFIGUREFLAGS="--target=$TARGET --disable-shared --enable-static --disable-werror --without-curses \
+                    --disable-tui --with-expat --without-babeltrace --disable-unit-tests --disable-source-highlight \
+                    --disable-xz --disable-xzdec --disable-lzmadec --disable-scripts \
+                    --disable-doc --disable-docs --disable-nls --disable-rpath --disable-libmcheck --without-libunwind \
+                    --without-mpc --without-mpfr --without-gmp --without-cloog --without-isl \
+                    --disable-sim --enable-gdbserver=no --without-python  --disable-gprof --without-debuginfod \
+                    --without-guile --without-lzma --without-xxhash --without-intel-pt --disable-inprocess-agent \
+                    --program-prefix=${PROGRAMPREFIX}-"
+    [ -n "$HOSTISDARWIN" ]  && ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
+    [ -n "$HOSTISLINUX" ]   && CFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" CXXFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
+    [ -n "$HOSTISWINDOWS" ] && CFLAGS=-DNDEBUG CXXFLAGS=-DNDEBUG ../configure $CONFIGUREFLAGS --with-system-readline 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
+  
+    [ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && make CFLAGS=-Wno-error=implicit-function-declaration -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 3740 >/dev/null
+    #[ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && make CFLAGS=-Wno-error=implicit-function-declaration 2>/dev/null | $PV --name="Build    " --line-mode --size 3740 >/dev/null
+    [ -n "$HOSTISWINDOWS" ]                     && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 3740 >/dev/null
+
+    if [ -n "$HOSTISLINUX" ]; then
+      cd gdb
+      rm -f gdb
+      sed --in-place "s,-ltermcap,/usr/lib/x86_64-linux-gnu/libtermcap.a,g" Makefile
+      sed --in-place "s,-lexpat,/usr/lib/x86_64-linux-gnu/libexpat.a,g" Makefile
+      make
+    fi
+
+    make install DESTDIR=$BUILDDIR 2>/dev/null | $PV --name="Install  " --line-mode --size 164 >/dev/null
+
+    mkdir -p $INSTALLDIR
+    for file in gdb-8.3.1${EXEEXT} ; do
+      rm -f $INSTALLDIR/${PROGRAMPREFIX}-$file ||:  2>/dev/null
+      cp $BUILDDIR/$PREFIXDIR/bin/${PROGRAMPREFIX}-gdb${EXEEXT} $INSTALLDIR/${PROGRAMPREFIX}-$file
       strip $INSTALLDIR/${PROGRAMPREFIX}-$file
       [ -n "$HOSTISDARWIN" ] && codesign -f -o runtime --timestamp -s 'Developer ID Application: Michael Ring (4S7HMLQE4Z)' $INSTALLDIR/${PROGRAMPREFIX}-$file
     done
@@ -191,7 +270,8 @@ buildavarice() {
     cd build
 
     CONFIGUREFLAGS="--target=$TARGET --disable-shared --enable-static --disable-werror"
-    [ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && CFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" CXXFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 129 >/dev/null
+    [ -n "$HOSTISDARWIN" ] && ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 129 >/dev/null
+    [ -n "$HOSTISLINUX" ] && CFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" CXXFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" ../configure $CONFIGUREFLAGS 2>/dev/null #| $PV --name="Configure" --line-mode --size 129 >/dev/null
     [ -n "$HOSTISWINDOWS" ]                     && ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 129 >/dev/null
   
     [ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 74 >/dev/null
@@ -236,7 +316,13 @@ buildstlink() {
     tar zxvf ${STLINKVERSION}.tar.gz 2>&1 | $PV --name="Unpack   " --line-mode --size 230 >/dev/null
     cd $STLINKVERSION
   
-    [ -n "$HOSTISDARWIN" ] && make release -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 113 >/dev/null
+    if [ -n "$HOSTISDARWIN" ]; then
+      mkdir build
+      cd build
+      cmake .. 2>/dev/null | $PV --name="Cmake    " --line-mode --size 64 >/dev/null
+      make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 113 >/dev/null
+      cd ..
+    fi
     if [ -n "$HOSTISLINUX" ]; then
       mkdir build
       cd build
@@ -404,7 +490,8 @@ buildbossa() {
     [ -d $BOSSAVERSION ] && rm -rf $BOSSAVERSION
     tar zxvf ${BOSSAVERSION}.tar.gz 2>&1 | $PV --name="Unpack   " --line-mode --size 99 >/dev/null
     cd $BOSSAVERSION
-    CFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" CXXFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" make bin/bossac  | $PV --name="Building " --line-mode --size 30 >/dev/null 2>/dev/null
+   [ -n "$HOSTISDARWIN" ] && make bin/bossac  | $PV --name="Building " --line-mode --size 30 >/dev/null 2>/dev/null
+   [ -n "$HOSTISLINUX" ] && CFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" CXXFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" make bin/bossac  | $PV --name="Building " --line-mode --size 30 >/dev/null 2>/dev/null
 
     mkdir -p $INSTALLDIR
     for file in bossac ; do
@@ -428,6 +515,9 @@ buildgdb           avr              avr-embedded
 buildgdb           mipsel-sde-elf   mipsel-embedded
 buildgdb           riscv32-none-elf riscv32-embedded
 buildgdb           riscv64-none-elf riscv64-embedded
+
+buildoldgdb        avr              avr-embedded
+
 buildavarice       avr              avr-embedded
 buildstlink        arm-none-eabi    arm-embedded
 buildopenocd       arm-none-eabi    arm-embedded
