@@ -12,14 +12,28 @@ OUTPUTDIR=$BUILDDIR
 HOSTISWINDOWS=
 HOSTISLINUX=
 HOSTISDARWIN=
+HOSTISDARWINX86_64=
+HOSTISDARWINARM64=
 
 if [ "$(uname -s)" = "Darwin" ]; then
   HOSTISDARWIN=TRUE
+  PREFIXDIR=/usr/local/
   BREWDIR=$(dirname $(dirname $(which brew)))
   [ "$(uname -m)" = "x86_64" ] && HOSTISDARWINX86_64=TRUE
   [ "$(uname -m)" = "x86_64" ] && ARCHDIR=x86_64-darwin
   [ "$(uname -m)" = "arm64" ]  && HOSTISDARWINARM64=TRUE
   [ "$(uname -m)" = "arm64" ]  && ARCHDIR=aarch64-darwin
+fi
+if [ "$(uname -s)" = "Linux" ]; then
+  HOSTISLINUX=TRUE
+  PREFIXDIR=/usr/local/
+  [ "$(uname -m)" = "x86_64" ] && HOSTISLINUXX86_64=TRUE
+  [ "$(uname -m)" = "x86_64" ] && ARCHDIR=x86_64-linux
+fi
+
+if [ "$(uname -s | sed 's,_NT.*$,_NT,g')" = "MINGW64_NT" ]; then
+  HOSTISWINDOWS=TRUE
+  PREFIXDIR=/mingw64
 fi
 
 PV=pv
@@ -60,11 +74,11 @@ buildbinutils() {
     mkdir -p $INSTALLDIR
     for file in ar${EXEEXT} as${EXEEXT} ld${EXEEXT} objcopy${EXEEXT} ; do
       rm -f $INSTALLDIR/${PROGRAMPREFIX}-$file ||:  2>/dev/null
-      cp $BUILDDIR/usr/local/bin/${PROGRAMPREFIX}-$file $INSTALLDIR
+      cp $BUILDDIR/$PREFIXDIR/bin/${PROGRAMPREFIX}-$file $INSTALLDIR
       strip $INSTALLDIR/${PROGRAMPREFIX}-$file
       [ -n "$HOSTISDARWIN" ] && codesign -f -o runtime --timestamp -s 'Developer ID Application: Michael Ring (4S7HMLQE4Z)' $INSTALLDIR/${PROGRAMPREFIX}-$file
     done
-    rm -rf $BUILDDIR/usr
+    rm -rf $BUILDDIR/$PREFIXDIR
   )
 }
 
@@ -88,20 +102,35 @@ buildgdb() {
     tar zxvf ${GDBVERSION}.tar.gz 2>&1 | $PV --name="Unpack   " --line-mode --size 13100 >/dev/null
     cd $GDBVERSION
     [ -n "$HOSTISDARWIN" ] && patch -p1 <../patches/gdb-darwin.patch
+    if [ -n "$HOSTISWINDOWS" ]; then
+      patch -p1 <../patches/gdb-perfomance.patch
+      patch -p1 <../patches/gdb-fix-using-gnu-print.patch
+      patch -p1 <../patches/gdb-7.12-dynamic-libs.patch
+      patch -p1 <../patches/python-configure-path-fixes.patch
+      patch -p1 <../patches/gdb-fix-tui-with-pdcurses.patch
+      patch -p1 <../patches/gdb-lib-order.patch
+      patch -p1 <../patches/gdb-fix-array.patch
+      patch -p1 <../patches/gdb-home-is-userprofile.patch
+      sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" libiberty/configure
+      CPPFLAGS+=" -I${MINGW_PREFIX}/include/ncurses"
+      CFLAGS+=" -I${MINGW_PREFIX}/include/ncurses"
+      CXXFLAGS+=" -I${MINGW_PREFIX}/include/ncurses"
+      LDFLAGS+=" -fstack-protector"
+    fi
 
     mkdir build
     cd build
 
-    CONFIGUREFLAGS="--target=$TARGET --disable-shared --enable-static --disable-werror \
-                    --enable-tui --with-expat --enable-curses \
+    CONFIGUREFLAGS="--target=$TARGET --disable-shared --enable-static --disable-werror --with-curses \
+                    --enable-tui --with-expat --without-babeltrace --disable-unit-tests --disable-source-highlight \
                     --disable-xz --disable-xzdec --disable-lzmadec --disable-scripts \
-                    --disable-doc --disable-docs --disable-nls \
+                    --disable-doc --disable-docs --disable-nls --disable-rpath --disable-libmcheck --without-libunwind \
                     --without-mpc --without-mpfr --without-gmp --without-cloog --without-isl \
-                    --disable-sim --enable-gdbserver=no --without-python  --disable-gprof \
-                    --without-guile --without-lzma \
+                    --disable-sim --enable-gdbserver=no --without-python  --disable-gprof --without-debuginfod \
+                    --without-guile --without-lzma --without-xxhash --without-intel-pt --disable-inprocess-agent \
                     --program-prefix=${PROGRAMPREFIX}-"
-    [ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
-    [ -n "$HOSTISWINDOWS" ]                     && ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
+    [ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && CFLAGS=-DNDEBUG CXXFLAGS=-DNDEBUG ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
+    [ -n "$HOSTISWINDOWS" ]                     && CFLAGS=-DNDEBUG CXXFLAGS=-DNDEBUG ../configure $CONFIGUREFLAGS --with-system-readline 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
   
     [ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 3740 >/dev/null
     [ -n "$HOSTISWINDOWS" ]                     && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 3740 >/dev/null
@@ -115,11 +144,11 @@ buildgdb() {
     mkdir -p $INSTALLDIR
     for file in gdb${EXEEXT} ; do
       rm -f $INSTALLDIR/${PROGRAMPREFIX}-$file ||:  2>/dev/null
-      cp $BUILDDIR/usr/local/bin/${PROGRAMPREFIX}-$file $INSTALLDIR
+      cp $BUILDDIR/$PREFIXDIR/bin/${PROGRAMPREFIX}-$file $INSTALLDIR
       strip $INSTALLDIR/${PROGRAMPREFIX}-$file
       [ -n "$HOSTISDARWIN" ] && codesign -f -o runtime --timestamp -s 'Developer ID Application: Michael Ring (4S7HMLQE4Z)' $INSTALLDIR/${PROGRAMPREFIX}-$file
     done
-    rm -rf $BUILDDIR/usr
+    rm -rf $BUILDDIR/PREFIXDIR
   )
 }
 
@@ -131,6 +160,11 @@ buildavarice() {
   INSTALLDIR=$OUTPUTDIR/bin/$ARCHDIR/
   EXEEXT=
   [ -n "$HOSTISWINDOWS" ] && EXEEXT=.exe
+
+  if [ -n "$HOSTISWINDOWS" ]; then
+    echo "Skipping $AVARICEVERSION for target $TARGET, not supported..."
+    return
+  fi
 
   if [ -f $INSTALLDIR/avarice${EXEEXT} ]; then
     echo "Skipping $AVARICEVERSION for target $TARGET..."
@@ -149,13 +183,7 @@ buildavarice() {
     mkdir build
     cd build
 
-    CONFIGUREFLAGS="--target=$TARGET --disable-shared --enable-static --disable-werror \
-                    --enable-tui --with-expat --enable-curses \
-                    --disable-xz --disable-xzdec --disable-lzmadec --disable-scripts \
-                    --disable-doc --disable-docs --disable-nls \
-                    --without-mpc --without-mpfr --without-gmp --without-cloog --without-isl \
-                    --disable-sim --enable-gdbserver=no --without-python  --disable-gprof \
-                    --without-guile --without-lzma"
+    CONFIGUREFLAGS="--target=$TARGET --disable-shared --enable-static --disable-werror"
     [ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 129 >/dev/null
     [ -n "$HOSTISWINDOWS" ]                     && ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 129 >/dev/null
   
@@ -173,11 +201,11 @@ buildavarice() {
     mkdir -p $INSTALLDIR
     for file in avarice ; do
       rm -f $INSTALLDIR/$file ||:  2>/dev/null
-      cp $BUILDDIR/usr/local/bin/$file $INSTALLDIR
+      cp $BUILDDIR/$PREFIXDIR/bin/$file $INSTALLDIR
       strip $INSTALLDIR/$file
       [ -n "$HOSTISDARWIN" ] && codesign -f -o runtime --timestamp -s 'Developer ID Application: Michael Ring (4S7HMLQE4Z)' $INSTALLDIR/$file
     done
-    rm -rf $BUILDDIR/usr
+    rm -rf $BUILDDIR/$PREFIXDIR
   )
 }
 
@@ -202,8 +230,13 @@ buildstlink() {
     cd $STLINKVERSION
   
     [ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && make release -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 113 >/dev/null
-    [ -n "$HOSTISWINDOWS" ]                     && make release -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 113 >/dev/null
-
+    if [ -n "$HOSTISWINDOWS" ]; then
+      mkdir build
+      cd build
+        /mingw64/bin/cmake.exe -G "MinGW Makefiles" ..
+        /mingw64/bin/mingw32-make.exe
+      make release -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 113 >/dev/null
+    fi
     mkdir -p $INSTALLDIR
     for file in st-flash st-info st-util ; do
       rm -f $INSTALLDIR/$file ||:  2>/dev/null
@@ -255,19 +288,19 @@ buildopenocdrp2040() {
     mkdir -p $INSTALLDIR
     for file in openocd ; do
       rm -f $INSTALLDIR/${file}-rp2040 ||:  2>/dev/null
-      cp $BUILDDIR/usr/local/bin/$file $INSTALLDIR/${file}-rp2040
+      cp $BUILDDIR/$PREFIXDIR/bin/$file $INSTALLDIR/${file}-rp2040
       strip $INSTALLDIR/${file}-rp2040
       [ -n "$HOSTISDARWIN" ] && codesign -f -o runtime --timestamp -s 'Developer ID Application: Michael Ring (4S7HMLQE4Z)' $INSTALLDIR/${file}-rp2040
     done
     mkdir -p $INSTALLDIR/../../share/openocd/scripts/{board,interface,target}
-    cp $BUILDDIR/usr/local/share/openocd/scripts/interface/picoprobe.cfg $INSTALLDIR/../../share/openocd/scripts/interface/
-    cp $BUILDDIR/usr/local/share/openocd/scripts/target/rp2040*.cfg $INSTALLDIR/../../share/openocd/scripts/target/
-    cp $BUILDDIR/usr/local/share/openocd/scripts/target/swj-dp*.tcl $INSTALLDIR/../../share/openocd/scripts/target/
+    cp $BUILDDIR/$PREFIXDIR/share/openocd/scripts/interface/picoprobe.cfg $INSTALLDIR/../../share/openocd/scripts/interface/
+    cp $BUILDDIR/$PREFIXDIR/share/openocd/scripts/target/rp2040*.cfg $INSTALLDIR/../../share/openocd/scripts/target/
+    cp $BUILDDIR/$PREFIXDIR/share/openocd/scripts/target/swj-dp*.tcl $INSTALLDIR/../../share/openocd/scripts/target/
     cat >$INSTALLDIR/../../share/openocd/scripts/board/pico.cfg <<EOF
 source [find interface/picoprobe.cfg]
 source [find target/RP2040.cfg]    
 EOF
-    rm -rf $BUILDDIR/usr
+    rm -rf $BUILDDIR/$PREFIXDIR
   )
 }
 
@@ -312,13 +345,13 @@ buildopenocd() {
     mkdir -p $INSTALLDIR
     for file in openocd ; do
       rm -f $INSTALLDIR/${file} ||:  2>/dev/null
-      cp $BUILDDIR/usr/local/bin/$file $INSTALLDIR/${file}
+      cp $BUILDDIR/$PREFIXDIR/bin/$file $INSTALLDIR/${file}
       strip $INSTALLDIR/${file}
       [ -n "$HOSTISDARWIN" ] && codesign -f -o runtime --timestamp -s 'Developer ID Application: Michael Ring (4S7HMLQE4Z)' $INSTALLDIR/${file}
     done
     mkdir -p $INSTALLDIR/../../share/openocd
-    cp -r $BUILDDIR/usr/local/share/openocd $INSTALLDIR/../../share/
-    rm -rf $BUILDDIR/usr
+    cp -r $BUILDDIR/$PREFIXDIR/share/openocd $INSTALLDIR/../../share/
+    rm -rf $BUILDDIR/$PREFIXDIR
   )
 }
 
