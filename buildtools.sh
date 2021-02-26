@@ -121,20 +121,27 @@ buildgdb() {
     mkdir build
     cd build
 
-    CONFIGUREFLAGS="--target=$TARGET --disable-shared --enable-static --disable-werror --with-curses \
-                    --enable-tui --with-expat --without-babeltrace --disable-unit-tests --disable-source-highlight \
+    CONFIGUREFLAGS="--target=$TARGET --disable-shared --enable-static --disable-werror --without-curses \
+                    --disable-tui --with-expat --without-babeltrace --disable-unit-tests --disable-source-highlight \
                     --disable-xz --disable-xzdec --disable-lzmadec --disable-scripts \
                     --disable-doc --disable-docs --disable-nls --disable-rpath --disable-libmcheck --without-libunwind \
                     --without-mpc --without-mpfr --without-gmp --without-cloog --without-isl \
                     --disable-sim --enable-gdbserver=no --without-python  --disable-gprof --without-debuginfod \
                     --without-guile --without-lzma --without-xxhash --without-intel-pt --disable-inprocess-agent \
                     --program-prefix=${PROGRAMPREFIX}-"
-    [ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && CFLAGS=-DNDEBUG CXXFLAGS=-DNDEBUG ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
+    [ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && CFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" CXXFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
     [ -n "$HOSTISWINDOWS" ]                     && CFLAGS=-DNDEBUG CXXFLAGS=-DNDEBUG ../configure $CONFIGUREFLAGS --with-system-readline 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
   
     [ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 3740 >/dev/null
     [ -n "$HOSTISWINDOWS" ]                     && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 3740 >/dev/null
 
+    if [ -n "$HOSTISLINUX" ]; then
+      cd gdb
+      rm -f gdb
+      sed --in-place "s,-ltermcap,/usr/lib/x86_64-linux-gnu/libtermcap.a,g" Makefile
+      sed --in-place "s,-lexpat,/usr/lib/x86_64-linux-gnu/libexpat.a,g" Makefile
+      make
+    fi
     #  cat gdb/Makefile | sed 's,$(TDEPLIBS) $(TUI_LIBRARY) $(CLIBS) $(LOADLIBES),$(TDEPLIBS) $(TUI_LIBRARY) $(CLIBS) $(LOADLIBES) -lssp,g' >Makefile.tmp
     #  mv Makefile.tmp gdb/Makefile
     #  make LDFLAGS=-static -j 8 2>/dev/null | $PV --name="ReBuild  " --line-mode --size 85 >/dev/null
@@ -174,20 +181,20 @@ buildavarice() {
   fi
   (
     [ -d $AVARICEVERSION ] && rm -rf $AVARICEVERSION
-    tar zxvf ${AVARICEVERSION}.tar.gz 2>&1 | $PV --name="Unpack   " --line-mode --size 13100 >/dev/null
+    tar zxvf ${AVARICEVERSION}.tar.gz 2>&1 | $PV --name="Unpack   " --line-mode --size 81 >/dev/null
     cd $AVARICEVERSION
-    patch -p1 <../patches/avarice-timeouts.patch
+    patch -p1 <../patches/avarice-timeouts.patch >/dev/null
     cd avarice
-    ./Bootstrap
+    ./Bootstrap 2>&1 | $PV --name="Bootstrap" --line-mode --size 13 >/dev/null
 
     mkdir build
     cd build
 
     CONFIGUREFLAGS="--target=$TARGET --disable-shared --enable-static --disable-werror"
-    [ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 129 >/dev/null
+    [ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && CFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" CXXFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 129 >/dev/null
     [ -n "$HOSTISWINDOWS" ]                     && ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 129 >/dev/null
   
-    [ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 64 >/dev/null
+    [ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 74 >/dev/null
     [ -n "$HOSTISWINDOWS" ]                     && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 64 >/dev/null
 
 
@@ -196,7 +203,7 @@ buildavarice() {
     [ -n "$HOSTISDARWINARM64" ] && g++  -g -O2 -D_THREAD_SAFE -pthread   -o avarice crc16.o devdescr.o ioreg.o jtag2bp.o jtag2io.o jtag2misc.o jtag2prog.o jtag2run.o jtag2rw.o jtag2usb.o jtag3bp.o jtag3io.o jtag3misc.o jtag3prog.o jtag3run.o jtag3rw.o jtagbp.o jtaggeneric.o jtagio.o jtagmisc.o jtagprog.o jtagrun.o jtagrw.o main.o remote.o utils.o gnu_getopt.o gnu_getopt1.o /opt/homebrew/lib/libhidapi.a /opt/homebrew/lib/libusb-1.0.a /opt/homebrew/lib/libusb.a -lobjc -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,AppKit /opt/homebrew/lib/libintl.a -liconv   -lz -ldl
     cd ..    
 
-    make install DESTDIR=$BUILDDIR 2>/dev/null | $PV --name="Install  " --line-mode --size 15 >/dev/null
+    make install DESTDIR=$BUILDDIR 2>/dev/null | $PV --name="Install  " --line-mode --size 31 >/dev/null
 
     mkdir -p $INSTALLDIR
     for file in avarice ; do
@@ -229,20 +236,43 @@ buildstlink() {
     tar zxvf ${STLINKVERSION}.tar.gz 2>&1 | $PV --name="Unpack   " --line-mode --size 230 >/dev/null
     cd $STLINKVERSION
   
-    [ -n "$HOSTISDARWIN" -o -n "$HOSTISLINUX" ] && make release -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 113 >/dev/null
+    [ -n "$HOSTISDARWIN" ] && make release -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 113 >/dev/null
+    if [ -n "$HOSTISLINUX" ]; then
+      mkdir build
+      cd build
+      cmake .. 2>/dev/null | $PV --name="Cmake    " --line-mode --size 64 >/dev/null
+      make stlink-static | $PV --name="Build    " --line-mode --size 10 >/dev/null
+      make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 39 >/dev/null
+      /usr/bin/cc -std=gnu11 -Wall -Wextra -Wshadow -D_FORTIFY_SOURCE=2 -fstrict-aliasing -Wundef -Wformat -Wformat-security \
+                  -Wmaybe-uninitialized -Wimplicit-function-declaration -Wredundant-decls -fPIC -O2 -Werror \
+                  CMakeFiles/st-info.dir/src/tools/info.c.o \
+                  -o bin/st-info lib/libstlink.a /usr/lib/x86_64-linux-gnu/libusb-1.0.a -pthread -ludev
+      /usr/bin/cc -std=gnu11 -Wall -Wextra -Wshadow -D_FORTIFY_SOURCE=2 -fstrict-aliasing -Wundef -Wformat -Wformat-security \
+                  -Wmaybe-uninitialized -Wimplicit-function-declaration -Wredundant-decls -fPIC -O2 -Werror \
+                  CMakeFiles/st-util.dir/src/st-util/gdb-remote.c.o CMakeFiles/st-util.dir/src/st-util/gdb-server.c.o \
+                  CMakeFiles/st-util.dir/src/st-util/semihosting.c.o \
+                  -o bin/st-util lib/libstlink.a /usr/lib/x86_64-linux-gnu/libusb-1.0.a -pthread -ludev
+      /usr/bin/cc -std=gnu11 -Wall -Wextra -Wshadow -D_FORTIFY_SOURCE=2 -fstrict-aliasing -Wundef -Wformat -Wformat-security \
+                  -Wmaybe-uninitialized -Wimplicit-function-declaration -Wredundant-decls -fPIC -O2 -Werror \
+                  CMakeFiles/st-flash.dir/src/tools/flash.c.o CMakeFiles/st-flash.dir/src/tools/flash_opts.c.o \
+                  -o bin/st-flash  lib/libstlink.a /usr/lib/x86_64-linux-gnu/libusb-1.0.a -pthread -ludev
+      cd ..
+    fi
+
     if [ -n "$HOSTISWINDOWS" ]; then
       mkdir build
       cd build
-        /mingw64/bin/cmake.exe -G "MinGW Makefiles" ..
-        /mingw64/bin/mingw32-make.exe
+      /mingw64/bin/cmake.exe -G "MinGW Makefiles" ..
+      /mingw64/bin/mingw32-make.exe
       make release -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 113 >/dev/null
+      cd ..
     fi
     mkdir -p $INSTALLDIR
     for file in st-flash st-info st-util ; do
       rm -f $INSTALLDIR/$file ||:  2>/dev/null
-      cp build/Release/bin/$file $INSTALLDIR
+      cp build/bin/$file $INSTALLDIR
       strip $INSTALLDIR/$file
-      [ -n "$HOSTISDARWIN" ] && codesign -f -o runtime --timestamp -s 'Developer ID Application: Michael Ring (4S7HMLQE4Z)' $INSTALLDIR/$file
+      [ -n "$HOSTISDARWIN" ] && codesign -f -o runtime --timestamp -s 'Developer ID Application: Michael Ring (4S7HMLQE4Z)' $INSTALLDIR/$file ||:
     done
   )
 }
@@ -264,7 +294,7 @@ buildopenocdrp2040() {
   fi
   (
     [ -d $OPENOCDRP2040VERSION ] && rm -rf $OPENOCDRP2040VERSION
-    git clone https://github.com/raspberrypi/openocd.git --branch picoprobe --depth=1 openocd-rp2040
+    git clone https://github.com/raspberrypi/openocd.git --branch picoprobe --depth=1 openocd-rp2040 2>&1 | $PV --name="Cloning  " --line-mode --size 438 >/dev/null
     cd $OPENOCDRP2040VERSION
 
     patch -p1 <../patches/openocd-rp2040-fpcupspecialpath.patch
@@ -283,7 +313,7 @@ buildopenocdrp2040() {
 
     [ -n "$HOSTISDARWINX86_64" ]  && gcc -Wall -Wstrict-prototypes -Wformat-security -Wshadow -Wextra -Wno-unused-parameter -Wbad-function-cast -Wcast-align -Wredundant-decls -g -O2 -o src/openocd src/main.o src/.libs/libopenocd.a /usr/local/opt/libusb-compat/lib/libusb.a /usr/local/opt/libftdi/lib/libftdi1.a /usr/local/opt/hidapi/lib/libhidapi.a /usr/local/opt/libusb/lib/libusb-1.0.a -lobjc -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,AppKit -lm ./jimtcl/libjim.a
     [ -n "$HOSTISDARWINARM64" ] && gcc -Wall -Wstrict-prototypes -Wformat-security -Wshadow -Wextra -Wno-unused-parameter -Wbad-function-cast -Wcast-align -Wredundant-decls -g -O2 -o src/openocd src/main.o src/.libs/libopenocd.a                /opt/homebrew/lib/libusb.a          /opt/homebrew/lib/libftdi1.a         /opt/homebrew/lib/libhidapi.a         /opt/homebrew/lib/libusb-1.0.a -lobjc -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,AppKit -lm ./jimtcl/libjim.a
-    make install DESTDIR=$BUILDDIR 2>/dev/null | $PV --name="Install  " --line-mode --size 27 >/dev/null
+    make install DESTDIR=$BUILDDIR 2>/dev/null | $PV --name="Install  " --line-mode --size 44 >/dev/null
 
     mkdir -p $INSTALLDIR
     for file in openocd ; do
@@ -321,7 +351,7 @@ buildopenocd() {
   fi
   (
     [ -d $OPENOCDVERSION ] && rm -rf $OPENOCDVERSION
-    git clone https://github.com/ntfreak/openocd.git openocd-0.11.0-rc2
+    git clone https://github.com/ntfreak/openocd.git openocd-0.11.0-rc2 2>&1 | $PV --name="Cloning  " --line-mode --size 438 >/dev/null
     cd $OPENOCDVERSION
 
     patch -p1 <../patches/openocd-fpcupspecialpath.patch
@@ -340,7 +370,7 @@ buildopenocd() {
 
     [ -n "$HOSTISDARWINX86_64" ]  && gcc -Wall -Wstrict-prototypes -Wformat-security -Wshadow -Wextra -Wno-unused-parameter -Wbad-function-cast -Wcast-align -Wredundant-decls -Wpointer-arith -g -O2 -o src/openocd src/main.o src/.libs/libopenocd.a /usr/local/opt/libusb-compat/lib/libusb.a /usr/local/opt/libftdi/lib/libftdi1.a /usr/local/opt/hidapi/lib/libhidapi.a /usr/local/opt/libusb/lib/libusb-1.0.a -lobjc -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,AppKit -lm ./jimtcl/libjim.a
     [ -n "$HOSTISDARWINARM64" ] && gcc -Wall -Wstrict-prototypes -Wformat-security -Wshadow -Wextra -Wno-unused-parameter -Wbad-function-cast -Wcast-align -Wredundant-decls -Wpointer-arith -g -O2 -o src/openocd src/main.o src/.libs/libopenocd.a                /opt/homebrew/lib/libusb.a          /opt/homebrew/lib/libftdi1.a         /opt/homebrew/lib/libhidapi.a         /opt/homebrew/lib/libusb-1.0.a -lobjc -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,AppKit -lm ./jimtcl/libjim.a
-    make install INFO_DEPS= DESTDIR=$BUILDDIR 2>/dev/null | $PV --name="Install  " --line-mode --size 24 >/dev/null
+    make install INFO_DEPS= DESTDIR=$BUILDDIR 2>/dev/null | $PV --name="Install  " --line-mode --size 44 >/dev/null
 
     mkdir -p $INSTALLDIR
     for file in openocd ; do
@@ -372,9 +402,9 @@ buildbossa() {
   fi
   (
     [ -d $BOSSAVERSION ] && rm -rf $BOSSAVERSION
-    tar zxvf ${BOSSAVERSION}.tar.gz 2>&1 | $PV --name="Unpack   " --line-mode --size 13100 >/dev/null
+    tar zxvf ${BOSSAVERSION}.tar.gz 2>&1 | $PV --name="Unpack   " --line-mode --size 99 >/dev/null
     cd $BOSSAVERSION
-    make bin/bossac
+    CFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" CXXFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" make bin/bossac  | $PV --name="Building " --line-mode --size 30 >/dev/null 2>/dev/null
 
     mkdir -p $INSTALLDIR
     for file in bossac ; do
