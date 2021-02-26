@@ -1,6 +1,5 @@
 #!/bin/sh
 set -e
-EXPATDIR=$HOME/devel/expat-2.2.9
 BUILDDIR=$(pwd)
 BINUTILSVERSION=binutils-2.36.1
 GDBVERSION=gdb-10.1
@@ -8,6 +7,7 @@ AVARICEVERSION=AVaRICE-master
 STLINKVERSION=stlink-1.6.1
 OPENOCDRP2040VERSION=openocd-rp2040
 OPENOCDVERSION=openocd-0.11.0-rc2
+BOSSAVERSION=BOSSA-1.9.1
 OUTPUTDIR=$BUILDDIR
 HOSTISWINDOWS=
 HOSTISLINUX=
@@ -322,6 +322,37 @@ buildopenocd() {
   )
 }
 
+buildbossa() {
+  TARGET=$1
+  DESTSUBDIR=$2
+  PROGRAMPREFIX=$3
+  [ -z "$PROGRAMPREFIX" ] && PROGRAMPREFIX=${TARGET}
+  INSTALLDIR=$OUTPUTDIR/bin/$ARCHDIR/
+  EXEEXT=
+  [ -n "$HOSTISWINDOWS" ] && EXEEXT=.exe
+
+  if [ -f $INSTALLDIR/bossac${EXEEXT} ]; then
+    echo "Skipping $BOSSAVERSION for target $TARGET..."
+    return 0
+  else
+    echo "Building $BOSSAVERSION for target $TARGET..."
+  fi
+  (
+    [ -d $BOSSAVERSION ] && rm -rf $BOSSAVERSION
+    tar zxvf ${BOSSAVERSION}.tar.gz 2>&1 | $PV --name="Unpack   " --line-mode --size 13100 >/dev/null
+    cd $BOSSAVERSION
+    make bin/bossac
+
+    mkdir -p $INSTALLDIR
+    for file in bossac ; do
+      rm -f $INSTALLDIR/$file ||:  2>/dev/null
+      cp bin/$file $INSTALLDIR
+      strip $INSTALLDIR/$file
+      [ -n "$HOSTISDARWIN" ] && codesign -f -o runtime --timestamp -s 'Developer ID Application: Michael Ring (4S7HMLQE4Z)' $INSTALLDIR/$file
+    done
+  )
+}
+
 
 buildbinutils      arm-none-eabi    arm-embedded
 buildbinutils      avr              avr-embedded
@@ -338,6 +369,7 @@ buildavarice       avr              avr-embedded
 buildstlink        arm-none-eabi    arm-embedded
 buildopenocd       arm-none-eabi    arm-embedded
 buildopenocdrp2040 arm-none-eabi    arm-embedded
+buildbossa         arm-none-eabi    arm-embedded
 
 rm -f develtools4fpc-$ARCHDIR.zip
 rm -f binutils_gdb-$ARCHDIR.zip
