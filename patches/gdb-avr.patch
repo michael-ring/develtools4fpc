@@ -1,0 +1,14 @@
+--- gdb-7.7.1.orig/gdb/avr-tdep.c	2014-05-05 23:51:24.000000000 +0200
++++ gdb-7.7.1.orig/gdb/avr-tdep.c	2015-05-24 18:31:50.426950878 +0200
+@@ -332,7 +332,10 @@ 
+ {
+   ULONGEST addr = unpack_long (type, buf);
+ 
+-  return avr_make_saddr (addr);
++  if (TYPE_DATA_SPACE (type))
++    return avr_make_saddr (addr);
++  else
++    return avr_make_iaddr (addr);
+ }
+ 
+ static CORE_ADDR

@@ -1,0 +1,19 @@
+--- gdb-8.3.1/gdb/Makefile.in.save	2021-02-27 21:38:19.000000000 +0100
++++ gdb-8.3.1/gdb/Makefile.in	2021-02-27 21:38:44.000000000 +0100
+@@ -1586,14 +1586,14 @@
+ 	$(SUBDIR_TARGET_OBS) \
+ 	$(SUBDIR_GCC_COMPILE_OBS)
+ 
+-SUBDIRS = doc @subdirs@ data-directory $(GNULIB_BUILDDIR)
++SUBDIRS = @subdirs@ data-directory $(GNULIB_BUILDDIR)
+ CLEANDIRS = $(SUBDIRS)
+ 
+ # List of subdirectories in the build tree that must exist.
+ # This is used to force build failures in existing trees when
+ # a new directory is added.
+ # The format here is for the `case' shell command.
+-REQUIRED_SUBDIRS = doc | testsuite | $(GNULIB_BUILDDIR) | data-directory
++REQUIRED_SUBDIRS = testsuite | $(GNULIB_BUILDDIR) | data-directory
+ 
+ # Parser intermediate files.
+ YYFILES = \
