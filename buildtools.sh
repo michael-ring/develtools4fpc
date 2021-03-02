@@ -73,8 +73,8 @@ PV=pv
 
 cd $BUILDDIR
 
-buildgdbmultiarch    arm-none-eabi,avr,mipsel-sde-elf,riscv32-none-elf,riscv64-none-elf
-buildgdboldmultiarch arm-none-eabi,avr,mipsel-sde-elf,riscv32-none-elf,riscv64-none-elf
+buildgdbmultiarch    all
+buildgdboldmultiarch all
 buildavarice
 buildstlink
 buildopenocd

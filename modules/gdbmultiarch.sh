@@ -25,21 +25,7 @@ buildgdbmultiarch() {
       (
       cd /usr/src/mxe
       sudo make libiconv
-      #sudo make readline
       sudo make expat
-      #patch -p1 <../patches/gdb-perfomance.patch
-      #patch -p1 <../patches/gdb-fix-using-gnu-print.patch
-      #patch -p1 <../patches/gdb-7.12-dynamic-libs.patch
-      #patch -p1 <../patches/python-configure-path-fixes.patch
-      #patch -p1 <../patches/gdb-fix-tui-with-pdcurses.patch
-      #patch -p1 <../patches/gdb-lib-order.patch
-      #patch -p1 <../patches/gdb-fix-array.patch
-      #patch -p1 <../patches/gdb-home-is-userprofile.patch
-      #sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" libiberty/configure
-      #CPPFLAGS+=" -I${MINGW_PREFIX}/include/ncurses"
-      #CFLAGS+=" -I${MINGW_PREFIX}/include/ncurses"
-      #CXXFLAGS+=" -I${MINGW_PREFIX}/include/ncurses"
-      #LDFLAGS+=" -fstack-protector"
       )
       patch -p1 <../patches/gdb-makeinfo.patch
     fi
@@ -49,22 +35,22 @@ buildgdbmultiarch() {
     mkdir build
     cd build
 
-    CONFIGUREFLAGS="--target=$HOST --enable-targets=$TARGETS --disable-shared --enable-static --disable-werror --without-curses \
+    CONFIGUREFLAGS="--enable-targets=$TARGETS --disable-shared --enable-static --disable-werror --without-curses \
                     --disable-tui --with-expat --without-babeltrace --disable-unit-tests --disable-source-highlight \
                     --disable-xz --disable-xzdec --disable-lzmadec --disable-scripts \
                     --disable-doc --disable-docs --disable-nls --disable-rpath --disable-libmcheck --without-libunwind \
                     --without-mpc --without-mpfr --without-gmp --without-cloog --without-isl \
                     --disable-sim --enable-gdbserver=no --without-python  --disable-gprof --without-debuginfod \
                     --without-guile --without-lzma --without-xxhash --without-intel-pt --disable-inprocess-agent"
-    [ -n "$HOSTISDARWIN" ]  &&../configure $CONFIGUREFLAGS --host=$HOST 2>/dev/null | $PV --name="Configure" --line-mode --size 139 >/dev/null
-    [ -n "$HOSTISLINUX" ]   && CFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" CXXFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" ../configure $CONFIGUREFLAGS --host=$HOST 2>/dev/null | $PV --name="Configure" --line-mode --size 124 >/dev/null
+    [ -n "$HOSTISDARWINX86_64" ]  && LDFLAGS="-Wl,-macosx_version_min,10.8" ../configure $CONFIGUREFLAGS --target=$HOST 2>/dev/null | $PV --name="Configure" --line-mode --size 139 >/dev/null
+    [ -n "$HOSTISDARWINARM64"  ]  && LDFLAGS="-Wl,-macosx_version_min,10.8" ../configure $CONFIGUREFLAGS --target=arm-none-eabi 2>/dev/null | $PV --name="Configure" --line-mode --size 139 >/dev/null
+    [ -n "$HOSTISLINUX"        ]   && CFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" CXXFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" ../configure $CONFIGUREFLAGS --target=$HOST 2>/dev/null | $PV --name="Configure" --line-mode --size 124 >/dev/null
     if [ -n "$HOSTISWINDOWS" ]; then
-      CFLAGS=-DNDEBUG CXXFLAGS=-DNDEBUG ../configure --host=x86_64-w64-mingw32 $CONFIGUREFLAGS #2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
+      CFLAGS=-DNDEBUG CXXFLAGS=-DNDEBUG ../configure --host=x86_64-w64-mingw32 $CONFIGUREFLAGS --target=$HOST 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
     fi
     [ -n "$HOSTISDARWIN"  ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 3860 >/dev/null
     [ -n "$HOSTISLINUX"   ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 3740 >/dev/null
     [ -n "$HOSTISWINDOWS" ] && make -j 8 ||: #2>/dev/null | $PV --name="Build    " --line-mode --size 3740 >/dev/null
-
     if [ -n "$HOSTISLINUX" ]; then
       cd gdb
       rm -f gdb

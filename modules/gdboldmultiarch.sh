@@ -35,16 +35,17 @@ buildgdboldmultiarch() {
     mkdir build
     cd build
 
-    CONFIGUREFLAGS="--target=$HOST --enable-targets=$TARGETS --disable-shared --enable-static --disable-werror --without-curses \
+    CONFIGUREFLAGS="--enable-targets=$TARGETS --disable-shared --enable-static --disable-werror --without-curses \
                     --disable-tui --with-expat --without-babeltrace --disable-unit-tests --disable-source-highlight \
                     --disable-xz --disable-xzdec --disable-lzmadec --disable-scripts \
                     --disable-doc --disable-docs --disable-nls --disable-rpath --disable-libmcheck --without-libunwind \
                     --without-mpc --without-mpfr --without-gmp --without-cloog --without-isl \
                     --disable-sim --enable-gdbserver=no --without-python  --disable-gprof --without-debuginfod \
                     --without-guile --without-lzma --without-xxhash --without-intel-pt --disable-inprocess-agent"
-    [ -n "$HOSTISDARWIN" ]  && CFLAGS="-Wno-error=implicit-function-declaration" ../configure $CONFIGUREFLAGS --host=$HOST 2>/dev/null | $PV --name="Configure" --line-mode --size 139 >/dev/null
-    [ -n "$HOSTISLINUX" ]   && CFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" CXXFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" ../configure $CONFIGUREFLAGS --host=$HOST 2>/dev/null | $PV --name="Configure" --line-mode --size 124 >/dev/null
-    [ -n "$HOSTISWINDOWS" ] && ../configure $CONFIGUREFLAGS --host=x86_64-w64-mingw32 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
+    [ -n "$HOSTISDARWINX86_64" ]  && CFLAGS="-Wno-error=implicit-function-declaration" LDFLAGS="-Wl,-macosx_version_min,10.8" ../configure $CONFIGUREFLAGS --target=$HOST 2>/dev/null | $PV --name="Configure" --line-mode --size 139 >/dev/null
+    [ -n "$HOSTISDARWINARM64"  ]  && CFLAGS="-Wno-error=implicit-function-declaration" LDFLAGS="-Wl,-macosx_version_min,10.8" ../configure $CONFIGUREFLAGS --target=arm-none-eabi 2>/dev/null | $PV --name="Configure" --line-mode --size 139 >/dev/null
+    [ -n "$HOSTISLINUX" ]   && CFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" CXXFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" ../configure $CONFIGUREFLAGS --target=$HOST 2>/dev/null | $PV --name="Configure" --line-mode --size 124 >/dev/null
+    [ -n "$HOSTISWINDOWS" ] && ../configure $CONFIGUREFLAGS --host=x86_64-w64-mingw32 --target=x86_64-w64-mingw32 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
   
     [ -n "$HOSTISDARWIN"  ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 3590 >/dev/null
     [ -n "$HOSTISLINUX"   ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 3740 >/dev/null
