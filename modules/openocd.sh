@@ -11,7 +11,7 @@ buildopenocd() {
   fi
   (
     [ -d $OPENOCDVERSION ] && rm -rf $OPENOCDVERSION
-    git clone https://github.com/ntfreak/openocd.git openocd-0.11.0-rc2 2>&1 | $PV --name="Cloning  " --line-mode --size 2 >/dev/null
+    git clone https://github.com/ntfreak/openocd.git openocd-0.11.0 2>&1 | $PV --name="Cloning  " --line-mode --size 2 >/dev/null
     cd $OPENOCDVERSION
 
     [ -n "$HOSTISLINUX"   ] && sudo apt-get install -y libusb-1.0-0-dev libudev-dev 2>/dev/null >/dev/null
@@ -21,7 +21,7 @@ buildopenocd() {
     mkdir build
     cd build
 
-    CONFIGUREFLAGS="--enable-static --disable-shared --disable-werror"
+    CONFIGUREFLAGS="--enable-static --disable-shared --disable-werror --without-capstone"
     [ -n "$HOSTISDARWIN"  ] && ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 439 >/dev/null
     [ -n "$HOSTISLINUX"   ] && ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 420 >/dev/null
     if [ -n "$HOSTISWINDOWS" ]; then

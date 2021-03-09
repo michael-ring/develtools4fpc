@@ -6,7 +6,8 @@ GDBOLDVERSION=gdb-8.3.1
 AVARICEVERSION=AVaRICE-master
 STLINKVERSION=stlink-1.6.1
 OPENOCDRP2040VERSION=openocd-rp2040
-OPENOCDVERSION=openocd-0.11.0-rc2
+OPENOCDPICODEBUGVERSION=openocd-picodebug
+OPENOCDVERSION=openocd-0.11.0
 BOSSAVERSION=BOSSA-1.9.1
 
 HOSTISWINDOWS=
@@ -69,6 +70,7 @@ PV=pv
 . modules/stlink.sh
 . modules/openocd.sh
 . modules/openocdrp2040.sh
+. modules/openocdpicodebug.sh
 . modules/bossa.sh
 
 cd $BUILDDIR
@@ -79,4 +81,5 @@ buildavarice
 buildstlink
 buildopenocd
 buildopenocdrp2040
+buildopenocdpicodebug
 buildbossa
