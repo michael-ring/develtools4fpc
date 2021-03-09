@@ -29,11 +29,11 @@ buildavarice() {
     CONFIGUREFLAGS="--disable-shared --enable-static --disable-werror"
     [ -n "$HOSTISDARWIN" ] && ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 129 >/dev/null
     [ -n "$HOSTISLINUX" ] && CFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" CXXFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 129 >/dev/null
-    [ -n "$HOSTISWINDOWS" ] && ../configure $CONFIGUREFLAGS --host=x86_64-w64-mingw32 #2>/dev/null | $PV --name="Configure" --line-mode --size 129 >/dev/null
+    [ -n "$HOSTISWINDOWS" ] && ../configure $CONFIGUREFLAGS --host=x86_64-w64-mingw32 2>/dev/null | $PV --name="Configure" --line-mode --size 129 >/dev/null
   
     [ -n "$HOSTISDARWIN"  ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 64 >/dev/null
     [ -n "$HOSTISLINUX"   ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 80 >/dev/null
-    [ -n "$HOSTISWINDOWS" ] && make -j 8 #2>/dev/null | $PV --name="Build    " --line-mode --size 80 >/dev/null
+    [ -n "$HOSTISWINDOWS" ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 80 >/dev/null
 
     cd src
     [ -n "$HOSTISDARWINX86_64" ] && g++  -g -O2 -D_THREAD_SAFE -pthread   -o avarice crc16.o devdescr.o ioreg.o jtag2bp.o jtag2io.o jtag2misc.o jtag2prog.o jtag2run.o jtag2rw.o jtag2usb.o jtag3bp.o jtag3io.o jtag3misc.o jtag3prog.o jtag3run.o jtag3rw.o jtagbp.o jtaggeneric.o jtagio.o jtagmisc.o jtagprog.o jtagrun.o jtagrw.o main.o remote.o utils.o gnu_getopt.o gnu_getopt1.o  /usr/local/opt/hidapi/lib/libhidapi.a /usr/local/opt/libusb/lib/libusb-1.0.a /usr/local/opt/libusb-compat/lib/libusb.a -lobjc -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,AppKit /usr/local/opt/gettext/lib/libintl.a -liconv   -lz -ldl

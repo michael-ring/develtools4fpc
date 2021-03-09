@@ -50,7 +50,7 @@ buildgdbmultiarch() {
     fi
     [ -n "$HOSTISDARWIN"  ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 3860 >/dev/null
     [ -n "$HOSTISLINUX"   ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 3740 >/dev/null
-    [ -n "$HOSTISWINDOWS" ] && make -j 8 ||: #2>/dev/null | $PV --name="Build    " --line-mode --size 3740 >/dev/null
+    [ -n "$HOSTISWINDOWS" ] && make -j 8 ||: 2>/dev/null | $PV --name="Build    " --line-mode --size 3740 >/dev/null
     if [ -n "$HOSTISLINUX" ]; then
       cd gdb
       rm -f gdb
