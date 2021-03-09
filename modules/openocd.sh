@@ -11,7 +11,7 @@ buildopenocd() {
   fi
   (
     [ -d $OPENOCDVERSION ] && rm -rf $OPENOCDVERSION
-    git clone https://github.com/ntfreak/openocd.git openocd-0.11.0-rc2 2>&1 | $PV --name="Cloning  " --line-mode --size 2 >/dev/null
+    git clone https://github.com/ntfreak/openocd.git openocd-0.11.0 2>&1 | $PV --name="Cloning  " --line-mode --size 2 >/dev/null
     cd $OPENOCDVERSION
 
     [ -n "$HOSTISLINUX"   ] && sudo apt-get install -y libusb-1.0-0-dev libudev-dev 2>/dev/null >/dev/null
@@ -35,12 +35,12 @@ buildopenocd() {
       [ -n "$HOSTISWINDOWSI686" ] && PKG_CONFIG_PATH=/usr/src/mxe/usr/i686-w64-mingw32.static/lib/pkgconfig/ ../configure $CONFIGUREFLAGS --host=i686-w64-mingw32 2>/dev/null | $PV --name="Configure" --line-mode --size 439 >/dev/null
     fi
   
-    [ -n "$HOSTISDARWIN"  ] && make -j 8 INFO_DEPS= 2>/dev/null | $PV --name="Build    " --line-mode --size 1250 >/dev/null
+    [ -n "$HOSTISDARWIN"  ] && make -j 8 INFO_DEPS= CAPSTONE_CFLAGS=-I/opt/homebrew/Cellar/capstone/4.0.2/include/ 2>/dev/null | $PV --name="Build    " --line-mode --size 1250 >/dev/null
     [ -n "$HOSTISLINUX"   ] && make -j 8 INFO_DEPS= 2>/dev/null | $PV --name="Build    " --line-mode --size 1120 >/dev/null
     [ -n "$HOSTISWINDOWS" ] && make -j 8  2>/dev/null | $PV --name="Build    " --line-mode --size 1250 >/dev/null
 
     [ -n "$HOSTISDARWINX86_64" ]  && gcc -Wall -Wstrict-prototypes -Wformat-security -Wshadow -Wextra -Wno-unused-parameter -Wbad-function-cast -Wcast-align -Wredundant-decls -Wpointer-arith -g -O2 -o src/openocd src/main.o src/.libs/libopenocd.a /usr/local/opt/libusb-compat/lib/libusb.a /usr/local/opt/libftdi/lib/libftdi1.a /usr/local/opt/hidapi/lib/libhidapi.a /usr/local/opt/libusb/lib/libusb-1.0.a -lobjc -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,AppKit -lm ./jimtcl/libjim.a
-    [ -n "$HOSTISDARWINARM64" ] && gcc -Wall -Wstrict-prototypes -Wformat-security -Wshadow -Wextra -Wno-unused-parameter -Wbad-function-cast -Wcast-align -Wredundant-decls -Wpointer-arith -g -O2 -o src/openocd src/main.o src/.libs/libopenocd.a                /opt/homebrew/lib/libusb.a          /opt/homebrew/lib/libftdi1.a         /opt/homebrew/lib/libhidapi.a         /opt/homebrew/lib/libusb-1.0.a -lobjc -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,AppKit -lm ./jimtcl/libjim.a
+    [ -n "$HOSTISDARWINARM64" ] && gcc -Wall -Wstrict-prototypes -Wformat-security -Wshadow -Wextra -Wno-unused-parameter -Wbad-function-cast -Wcast-align -Wredundant-decls -Wpointer-arith -g -O2 -o src/openocd src/main.o src/.libs/libopenocd.a                /opt/homebrew/lib/libusb.a          /opt/homebrew/lib/libftdi1.a         /opt/homebrew/lib/libhidapi.a         /opt/homebrew/lib/libusb-1.0.a -lobjc -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,AppKit -lm /opt/homebrew/Cellar/capstone/4.0.2/lib/libcapstone.a ./jimtcl/libjim.a
     [ -n "$HOSTISLINUX"   ]      && /usr/bin/x86_64-linux-gnu-gcc -Wall -Wstrict-prototypes -Wformat-security -Wshadow -Wextra -Wno-unused-parameter -Wbad-function-cast -Wcast-align -Wredundant-decls -Wpointer-arith -g -O2 -o src/openocd src/main.o  src/.libs/libopenocd.a -ludev -lpthread /usr/lib/x86_64-linux-gnu/libusb-1.0.a -ludev -lpthread -lm ./jimtcl/libjim.a -ldl
 
     make install INFO_DEPS= DESTDIR=$BUILDDIR 2>/dev/null | $PV --name="Install  " --line-mode --size 44 >/dev/null
