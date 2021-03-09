@@ -95,6 +95,7 @@ buildopenocdpicodebug
 buildbossa
 
 cd $ARCHDIR
+echo "Cleaning up..."
 rm -f ../devtools4fpc-$ARCHDIR.zip ||: 2>/dev/null
 rm -rf ../AVaRICE-master/ ||:
 rm -rf ../BOSSA-*/ ||:
@@ -106,4 +107,12 @@ rm -rf ../openocd-picodebug/ ||:
 rm -rf ../openocd-rp2040/ ||:
 rm -rf ../stlink-*/ ||:
 
+#strip bin/* ||:
+#if [ -n "$HOSTISDARWIN" ]; then
+#  for file in bin/* ; do
+#    codesign -f -o runtime --timestamp -s 'Developer ID Application: Michael Ring (4S7HMLQE4Z)' $file
+#  done
+#fi
+
+echo "Zipping Results..."
 zip -r -q ../devtools4fpc-$ARCHDIR.zip *

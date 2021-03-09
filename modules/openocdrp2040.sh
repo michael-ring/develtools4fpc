@@ -14,7 +14,7 @@ buildopenocdrp2040() {
     git clone https://github.com/raspberrypi/openocd.git --branch picoprobe --depth=1 openocd-rp2040 2>&1 | $PV --name="Cloning  " --line-mode --size 2 >/dev/null
     cd $OPENOCDRP2040VERSION
 
-    [ -n "$HOSTISLINUX"   ] && sudo apt-get install -y libusb-1.0-0-dev libudev-dev 2>/dev/null >/dev/null
+    [ -n "$HOSTISLINUX"   ] && sudo apt-get install -y libusb-1.0-0-dev libudev-dev libhidapi-dev libftdi-dev 2>/dev/null >/dev/null
 
     ./bootstrap 2>&1 | $PV --name="Bootstrap" --line-mode --size 44 >/dev/null
 

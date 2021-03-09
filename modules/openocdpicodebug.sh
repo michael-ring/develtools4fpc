@@ -14,7 +14,7 @@ buildopenocdpicodebug() {
     git clone https://github.com/majbthrd/openocd.git --recursive --branch rp2040_cmsisdap_demo --depth=1 openocd-picodebug 2>&1 | $PV --name="Cloning  " --line-mode --size 2 >/dev/null
     cd $OPENOCDPICODEBUGVERSION
 
-    [ -n "$HOSTISLINUX"   ] && sudo apt-get install -y libusb-1.0-0-dev libudev-dev 2>/dev/null >/dev/null
+    [ -n "$HOSTISLINUX"   ] && sudo apt-get install -y libusb-1.0-0-dev libudev-dev libhidapi-dev 2>/dev/null >/dev/null
 
     ./bootstrap 2>&1 | $PV --name="Bootstrap" --line-mode --size 44 >/dev/null
 
@@ -31,16 +31,17 @@ buildopenocdpicodebug() {
         sudo make libusb1
         sudo make libftdi1
       )
-      PKG_CONFIG_PATH=/usr/src/mxe/usr/x86_64-w64-mingw32.static/lib/pkgconfig/ ../configure $CONFIGUREFLAGS --host=x86_64-w64-mingw32 2>/dev/null | $PV --name="Configure" --line-mode --size 438 >/dev/null
+      [ -n "$HOSTISWINDOWSX86_64" ] && PKG_CONFIG_PATH=/usr/src/mxe/usr/x86_64-w64-mingw32.static/lib/pkgconfig/ ../configure $CONFIGUREFLAGS --host=x86_64-w64-mingw32 2>/dev/null | $PV --name="Configure" --line-mode --size 439 >/dev/null
+      [ -n "$HOSTISWINDOWSI686" ] && PKG_CONFIG_PATH=/usr/src/mxe/usr/i686-w64-mingw32.static/lib/pkgconfig/ ../configure $CONFIGUREFLAGS --host=i686-w64-mingw32 2>/dev/null | $PV --name="Configure" --line-mode --size 439 >/dev/null
     fi
   
-    [ -n "$HOSTISDARWIN"  ] && make -j 8 CAPSTONE_CFLAGS=-I/opt/homebrew/Cellar/capstone/4.0.2/include/ 2>/dev/null | $PV --name="Build    " --line-mode --size 1250 >/dev/null
-    [ -n "$HOSTISLINUX"   ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 1230 >/dev/null
+    [ -n "$HOSTISDARWIN"  ] && make -j 8 INFO_DEPS= CAPSTONE_CFLAGS=-I/opt/homebrew/Cellar/capstone/4.0.2/include/ 2>/dev/null | $PV --name="Build    " --line-mode --size 1250 >/dev/null
+    [ -n "$HOSTISLINUX"   ] && make -j 8 INFO_DEPS= 2>/dev/null | $PV --name="Build    " --line-mode --size 1230 >/dev/null
     [ -n "$HOSTISWINDOWS" ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 1250 >/dev/null
 
     [ -n "$HOSTISDARWINX86_64" ] && gcc -Wall -Wstrict-prototypes -Wformat-security -Wshadow -Wextra -Wno-unused-parameter -Wbad-function-cast -Wcast-align -Wredundant-decls -g -O2 -o src/openocd src/main.o src/.libs/libopenocd.a /usr/local/opt/libusb-compat/lib/libusb.a /usr/local/opt/libftdi/lib/libftdi1.a /usr/local/opt/hidapi/lib/libhidapi.a /usr/local/opt/libusb/lib/libusb-1.0.a -lobjc -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,AppKit -lm ./jimtcl/libjim.a
     [ -n "$HOSTISDARWINARM64" ]  && gcc -Wall -Wstrict-prototypes -Wformat-security -Wshadow -Wextra -Wno-unused-parameter -Wbad-function-cast -Wcast-align -Wredundant-decls -g -O2 -o src/openocd src/main.o src/.libs/libopenocd.a                /opt/homebrew/lib/libusb.a          /opt/homebrew/lib/libftdi1.a         /opt/homebrew/lib/libhidapi.a         /opt/homebrew/lib/libusb-1.0.a -lobjc -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,AppKit -lm /opt/homebrew/Cellar/capstone/4.0.2/lib/libcapstone.a ./jimtcl/libjim.a
-    [ -n "$HOSTISLINUX"   ]      && /usr/bin/x86_64-linux-gnu-gcc -Wall -Wstrict-prototypes -Wformat-security -Wshadow -Wextra -Wno-unused-parameter -Wbad-function-cast -Wcast-align -Wredundant-decls -g -O2 -o src/openocd src/main.o  src/.libs/libopenocd.a -ludev -lpthread /usr/lib/x86_64-linux-gnu/libusb-1.0.a -ludev -lpthread -lm ./jimtcl/libjim.a -ldl
+    [ -n "$HOSTISLINUX"   ]      && /usr/bin/x86_64-linux-gnu-gcc -Wall -Wstrict-prototypes -Wformat-security -Wshadow -Wextra -Wno-unused-parameter -Wbad-function-cast -Wcast-align -Wredundant-decls -g -O2 -o src/openocd src/main.o  src/.libs/libopenocd.a -ludev -lpthread /usr/lib/x86_64-linux-gnu/libusb-1.0.a -lhidapi-hidraw -ludev -lpthread -lm ./jimtcl/libjim.a -ldl
 
     make install DESTDIR=$BUILDDIR 2>/dev/null | $PV --name="Install  " --line-mode --size 87 >/dev/null
 

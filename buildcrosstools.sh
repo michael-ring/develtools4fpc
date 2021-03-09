@@ -31,7 +31,7 @@ fi
 if [ "$(uname -s | sed 's,_NT.*$,_NT,g')" = "MINGW32_NT" ]; then
   HOSTISWINDOWS=TRUE
   PREFIXDIR=/mingw32
-  ARCHDIR=x86_64-win64
+  ARCHDIR=i686-win64
 fi
 
 if [ "$(uname -s | sed 's,_NT.*$,_NT,g')" = "MINGW64_NT" ]; then
@@ -42,8 +42,17 @@ fi
 
 if [ "$CC" = "/usr/src/mxe/usr/bin/x86_64-w64-mingw32.static-gcc" ]; then
   HOSTISWINDOWS=TRUE
+  HOSTISWINDOWSX86_64=TRUE
   PREFIXDIR=/usr/local/
   ARCHDIR=x86_64-win64
+  sudo apt-get install pv 2>/dev/null >/dev/null
+fi
+
+if [ "$CC" = "/usr/src/mxe/usr/bin/i686-w64-mingw32.static-gcc" ]; then
+  HOSTISWINDOWS=TRUE
+  HOSTISWINDOWSI686=TRUE
+  PREFIXDIR=/usr/local/
+  ARCHDIR=i686-win64
   sudo apt-get install pv 2>/dev/null >/dev/null
 fi
 

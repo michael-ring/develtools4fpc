@@ -22,7 +22,8 @@ buildbinutils() {
     CONFIGUREFLAGS="--target=$TARGET --enable-static --disable-shared --disable-nls --program-prefix=${PROGRAMPREFIX}-"
     [ -n "$HOSTISDARWIN"  ] && ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 97 >/dev/null
     [ -n "$HOSTISLINUX"   ] && ../configure $CONFIGUREFLAGS 2>/dev/null | $PV --name="Configure" --line-mode --size 97 >/dev/null
-    [ -n "$HOSTISWINDOWS" ] && ../configure $CONFIGUREFLAGS --host=x86_64-w64-mingw32 2>/dev/null | $PV --name="Configure" --line-mode --size 94 >/dev/null
+    [ -n "$HOSTISWINDOWSX86_64" ] && ../configure $CONFIGUREFLAGS --host=x86_64-w64-mingw32 2>/dev/null | $PV --name="Configure" --line-mode --size 94 >/dev/null
+    [ -n "$HOSTISWINDOWSI686" ] && ../configure $CONFIGUREFLAGS --host=i686-w64-mingw32 2>/dev/null | $PV --name="Configure" --line-mode --size 94 >/dev/null
   
     [ -n "$HOSTISDARWIN"  ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 3060 >/dev/null
     [ -n "$HOSTISLINUX"   ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 3090 >/dev/null
