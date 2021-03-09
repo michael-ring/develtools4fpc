@@ -83,3 +83,17 @@ buildopenocd
 buildopenocdrp2040
 buildopenocdpicodebug
 buildbossa
+
+cd $ARCHDIR
+rm -f ../devtools4fpc-$ARCHDIR.zip ||: 2>/dev/null
+rm -rf ../AVaRICE-master/ ||:
+rm -rf ../BOSSA-*/ ||:
+rm -rf ../binutils-*/ ||:
+rm -rf ../gdb-*/ ||:
+rm -rf ../gdb-*/ ||:
+rm -rf ../openocd-*/ ||:
+rm -rf ../openocd-picodebug/ ||:
+rm -rf ../openocd-rp2040/ ||:
+rm -rf ../stlink-*/ ||:
+
+zip -r -q ../devtools4fpc-$ARCHDIR.zip *
