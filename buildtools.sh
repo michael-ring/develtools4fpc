@@ -115,4 +115,4 @@ rm -rf ../stlink-*/ ||:
 #fi
 
 echo "Zipping Results..."
-zip -r -q ../devtools4fpc-$ARCHDIR.zip *
+zip -r -q ../develtools4fpc-$ARCHDIR.zip *
