@@ -31,7 +31,8 @@ buildopenocdrp2040() {
         sudo make libusb1
         sudo make libftdi1
       )
-      PKG_CONFIG_PATH=/usr/src/mxe/usr/x86_64-w64-mingw32.static/lib/pkgconfig/ ../configure $CONFIGUREFLAGS --host=x86_64-w64-mingw32 2>/dev/null | $PV --name="Configure" --line-mode --size 438 >/dev/null
+      [ -n "$HOSTISWINDOWSX86_64" ] && PKG_CONFIG_PATH=/usr/src/mxe/usr/x86_64-w64-mingw32.static/lib/pkgconfig/ ../configure $CONFIGUREFLAGS --host=x86_64-w64-mingw32 2>/dev/null | $PV --name="Configure" --line-mode --size 438 >/dev/null
+      [ -n "$HOSTISWINDOWSI686" ] && PKG_CONFIG_PATH=/usr/src/mxe/usr/i686-w64-mingw32.static/lib/pkgconfig/ ../configure $CONFIGUREFLAGS --host=i686-w64-mingw32 2>/dev/null | $PV --name="Configure" --line-mode --size 438 >/dev/null
     fi
   
     [ -n "$HOSTISDARWIN"  ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 1250 >/dev/null

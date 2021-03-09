@@ -31,12 +31,13 @@ buildopenocd() {
         sudo make libusb1
         sudo make libftdi1
       )
-      PKG_CONFIG_PATH=/usr/src/mxe/usr/x86_64-w64-mingw32.static/lib/pkgconfig/ ../configure $CONFIGUREFLAGS --host=x86_64-w64-mingw32 2>/dev/null | $PV --name="Configure" --line-mode --size 439 >/dev/null
+      [ -n "$HOSTISWINDOWSX86_64" ] && PKG_CONFIG_PATH=/usr/src/mxe/usr/x86_64-w64-mingw32.static/lib/pkgconfig/ ../configure $CONFIGUREFLAGS --host=x86_64-w64-mingw32 2>/dev/null | $PV --name="Configure" --line-mode --size 439 >/dev/null
+      [ -n "$HOSTISWINDOWSI686" ] && PKG_CONFIG_PATH=/usr/src/mxe/usr/i686-w64-mingw32.static/lib/pkgconfig/ ../configure $CONFIGUREFLAGS --host=i686-w64-mingw32 2>/dev/null | $PV --name="Configure" --line-mode --size 439 >/dev/null
     fi
   
     [ -n "$HOSTISDARWIN"  ] && make -j 8 INFO_DEPS= 2>/dev/null | $PV --name="Build    " --line-mode --size 1250 >/dev/null
     [ -n "$HOSTISLINUX"   ] && make -j 8 INFO_DEPS= 2>/dev/null | $PV --name="Build    " --line-mode --size 1120 >/dev/null
-    [ -n "$HOSTISWINDOWS" ] && make -j 8 INFO_DEPS= 2>/dev/null | $PV --name="Build    " --line-mode --size 1250 >/dev/null
+    [ -n "$HOSTISWINDOWS" ] && make -j 8  2>/dev/null | $PV --name="Build    " --line-mode --size 1250 >/dev/null
 
     [ -n "$HOSTISDARWINX86_64" ]  && gcc -Wall -Wstrict-prototypes -Wformat-security -Wshadow -Wextra -Wno-unused-parameter -Wbad-function-cast -Wcast-align -Wredundant-decls -Wpointer-arith -g -O2 -o src/openocd src/main.o src/.libs/libopenocd.a /usr/local/opt/libusb-compat/lib/libusb.a /usr/local/opt/libftdi/lib/libftdi1.a /usr/local/opt/hidapi/lib/libhidapi.a /usr/local/opt/libusb/lib/libusb-1.0.a -lobjc -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,AppKit -lm ./jimtcl/libjim.a
     [ -n "$HOSTISDARWINARM64" ] && gcc -Wall -Wstrict-prototypes -Wformat-security -Wshadow -Wextra -Wno-unused-parameter -Wbad-function-cast -Wcast-align -Wredundant-decls -Wpointer-arith -g -O2 -o src/openocd src/main.o src/.libs/libopenocd.a                /opt/homebrew/lib/libusb.a          /opt/homebrew/lib/libftdi1.a         /opt/homebrew/lib/libhidapi.a         /opt/homebrew/lib/libusb-1.0.a -lobjc -Wl,-framework,IOKit -Wl,-framework,CoreFoundation -Wl,-framework,AppKit -lm ./jimtcl/libjim.a

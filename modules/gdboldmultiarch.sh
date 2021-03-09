@@ -45,11 +45,12 @@ buildgdboldmultiarch() {
     [ -n "$HOSTISDARWINX86_64" ]  && CFLAGS="-Wno-error=implicit-function-declaration" LDFLAGS="-Wl,-macosx_version_min,10.8" ../configure $CONFIGUREFLAGS --target=$HOST 2>/dev/null | $PV --name="Configure" --line-mode --size 139 >/dev/null
     [ -n "$HOSTISDARWINARM64"  ]  && CFLAGS="-Wno-error=implicit-function-declaration" LDFLAGS="-Wl,-macosx_version_min,10.8" ../configure $CONFIGUREFLAGS --target=arm-none-eabi 2>/dev/null | $PV --name="Configure" --line-mode --size 139 >/dev/null
     [ -n "$HOSTISLINUX" ]   && CFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" CXXFLAGS="-DNDEBUG -static-libstdc++ -static-libgcc" ../configure $CONFIGUREFLAGS --target=$HOST 2>/dev/null | $PV --name="Configure" --line-mode --size 124 >/dev/null
-    [ -n "$HOSTISWINDOWS" ] && ../configure $CONFIGUREFLAGS --host=x86_64-w64-mingw32 --target=x86_64-w64-mingw32 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
+    [ -n "$HOSTISWINDOWSX86_64" ] && ../configure $CONFIGUREFLAGS --host=x86_64-w64-mingw32 --target=x86_64-w64-mingw32 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
+    [ -n "$HOSTISWINDOWSI686" ] && ../configure $CONFIGUREFLAGS --host=i686-w64-mingw32 --target=i686-w64-mingw32 2>/dev/null | $PV --name="Configure" --line-mode --size 96 >/dev/null
   
     [ -n "$HOSTISDARWIN"  ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 3590 >/dev/null
     [ -n "$HOSTISLINUX"   ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 3740 >/dev/null
-    [ -n "$HOSTISWINDOWS" ] && make -j 8 2>/dev/null #| $PV --name="Build    " --line-mode --size 3740 >/dev/null
+    [ -n "$HOSTISWINDOWS" ] && make -j 8 2>/dev/null | $PV --name="Build    " --line-mode --size 3740 >/dev/null
 
     if [ -n "$HOSTISLINUX" ]; then
       cd gdb
