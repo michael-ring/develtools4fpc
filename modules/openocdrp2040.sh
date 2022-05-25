@@ -61,7 +61,7 @@ buildopenocdrp2040() {
     cp $BUILDDIR/$PREFIXDIR/share/openocd/scripts/target/swj-dp*.tcl $INSTALLDIR/../share/openocd/scripts/target/
     cat >$INSTALLDIR/../share/openocd/scripts/board/pico.cfg <<EOF
 source [find interface/picoprobe.cfg]
-source [find target/RP2040.cfg]    
+source [find target/rp2040.cfg]    
 EOF
     rm -rf $BUILDDIR/$PREFIXDIR
   )
